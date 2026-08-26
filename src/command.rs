@@ -1,7 +1,7 @@
 use crate::{
     cli::{Cli, Commands},
     config::{AppStatus, Config},
-    files::{add_app_entry, get_metadata, remove_app_entry},
+    files::{add_app_entry, get_metadata, remove_app_entry, toggle_desktop_file},
 };
 use std::{
     error::Error,
@@ -15,15 +15,21 @@ pub fn handle_command(
     cli: &Cli,
 ) -> Result<(), Box<dyn Error>> {
     match command {
-        Commands::Add => handle_add(config, cli)?,
-        Commands::Remove => handle_remove(config, cli)?,
+        Commands::Add { name, url } => handle_add(config, cli, name, url)?,
+        Commands::Remove { name, yes } => handle_remove(config, cli, name, *yes)?,
         Commands::List => handle_list(config)?,
         Commands::Sync => handle_sync(config)?,
+        Commands::Toggle { name } => handle_toggle(config, cli, name)?,
     }
     Ok(())
 }
 
-fn handle_add(config: &mut Config, cli: &Cli) -> Result<(), Box<dyn Error>> {
+fn handle_add(
+    config: &mut Config,
+    cli: &Cli,
+    name: &Option<String>,
+    url: &Option<String>,
+) -> Result<(), Box<dyn Error>> {
     let mut name_list = Vec::new();
     let mut url_list = Vec::new();
 
@@ -32,40 +38,58 @@ fn handle_add(config: &mut Config, cli: &Cli) -> Result<(), Box<dyn Error>> {
         url_list.push(app.1.url.clone());
     }
 
-    let url = prompt_input("Enter app url: ")?;
-    let url = standardize_url(&url)?.to_string();
-    println!("{url}");
+    let url = match url {
+        Some(url) => url,
+        None => &prompt_input("Enter app url: ")?,
+    };
+    let url = standardize_url(url)?.to_string();
     if name_list.contains(&url) {
         println!("WARNING: an app with this url already {} exists.", url);
     }
 
-    let name = prompt_input("Enter app name: ")?;
-    if name_list.contains(&name) {
+    let name = match name {
+        Some(name) => name,
+        None => &prompt_input("Enter app name: ")?,
+    };
+    if name_list.contains(name) {
         println!("WARNING: an app already named {} exists.", name);
     }
 
-    add_app_entry(config, &name, url, AppStatus::Enabled, cli)?;
-
-    println!("{} added.", name);
+    add_app_entry(config, name, url, AppStatus::Enabled, cli)?;
+    println!("{} with url {} added.", name, config.apps[name].url);
 
     Ok(())
 }
 
-fn handle_remove(config: &mut Config, cli: &Cli) -> Result<(), Box<dyn Error>> {
+fn handle_remove(
+    config: &mut Config,
+    cli: &Cli,
+    name: &Option<String>,
+    yes: bool,
+) -> Result<(), Box<dyn Error>> {
     let mut name_list = Vec::new();
     for app in &config.apps {
         name_list.push(app.0.clone());
     }
 
-    let name = prompt_input("Enter app name to delete: ")?;
+    let name = match name {
+        Some(name) => name,
+        None => &prompt_input("Enter app name to delete: ")?,
+    };
 
-    if name_list.contains(&name) {
-        remove_app_entry(config, &name, cli)?;
+    if name_list.contains(name) {
+        if yes
+            || prompt_input(&format!(
+                "Remove {} with url {}? (y/N)",
+                name, config.apps[name].url
+            ))? == 'y'.to_string()
+        {
+            remove_app_entry(config, name, cli)?;
+            println!("{} removed.", name);
+        }
     } else {
         println!("App named {} does not exist.", name);
     }
-
-    println!("{} removed.", name);
 
     Ok(())
 }
@@ -95,6 +119,26 @@ fn handle_sync(config: &Config) -> Result<(), Box<dyn Error>> {
             _ => Ok(()),
         };
     }
+    Ok(())
+}
+
+fn handle_toggle(
+    config: &mut Config,
+    cli: &Cli,
+    name: &Option<String>,
+) -> Result<(), Box<dyn Error>> {
+    let mut name_list = Vec::new();
+    for app in &config.apps {
+        name_list.push(app.0.clone());
+    }
+
+    let name = match name {
+        Some(name) => name,
+        None => &prompt_input("Enter app name to delete: ")?,
+    };
+
+    toggle_desktop_file(name, config, cli)?;
+
     Ok(())
 }
 

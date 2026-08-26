@@ -79,7 +79,36 @@ fn save_icon(target_url: &str, name: &str, icon_dir: &Path) -> Result<PathBuf, B
     Ok(output_path)
 }
 
-pub fn remove_desktop_file(name: &str, config: &Config) -> Result<(), Box<dyn Error>> {
+pub fn toggle_desktop_file(
+    name: &str,
+    config: &mut Config,
+    cli: &Cli,
+) -> Result<(), Box<dyn Error>> {
+    match config.apps[name].status {
+        AppStatus::Enabled => {
+            remove_desktop_file(name, config)?;
+            println!("Removed {}'s .desktop file", name);
+
+            if let Some(app) = config.apps.get_mut(name) {
+                app.status = AppStatus::Disabled;
+            }
+        }
+        AppStatus::Disabled => {
+            create_desktop_file(name, config)?;
+            println!("Added {}'s .desktop file", name);
+
+            if let Some(app) = config.apps.get_mut(name) {
+                app.status = AppStatus::Enabled;
+            }
+        }
+    }
+
+    save_config(config, cli)?;
+
+    Ok(())
+}
+
+fn remove_desktop_file(name: &str, config: &Config) -> Result<(), Box<dyn Error>> {
     let desktop_dir = config
         .settings
         .desktop_file_dir
@@ -93,7 +122,7 @@ pub fn remove_desktop_file(name: &str, config: &Config) -> Result<(), Box<dyn Er
     Ok(())
 }
 
-pub fn create_desktop_file(name: &str, config: &Config) -> Result<(), Box<dyn Error>> {
+fn create_desktop_file(name: &str, config: &Config) -> Result<(), Box<dyn Error>> {
     let app = config
         .apps
         .get(name)
