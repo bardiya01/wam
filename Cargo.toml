@@ -1,7 +1,11 @@
 [package]
-name = "wam"
+name = "wam-manager"
 version = "0.1.0"
 edition = "2024"
+
+[[bin]]
+name = "wam"
+path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4.6.6", features = ["derive"] }

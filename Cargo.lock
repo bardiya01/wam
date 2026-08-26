@@ -1507,7 +1507,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "wam"
+name = "wam-manager"
 version = "0.1.0"
 dependencies = [
  "clap",
