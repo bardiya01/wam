@@ -19,10 +19,24 @@ It automatically fetches icons and created .desktop files
 
 ## Installation
 
+### crates.io
+
+```bash
+# Make sure $CARGO_HOME/bin is in $PATH
+
+cargo install wam-manager
+```
+
+### Build from source
+
 ```bash
 git clone https://github.com/bardiya01/wam.git
 
+cd wam
+
 cargo build --release
+
+./target/release/wam
 ```
 
 ## USAGE
@@ -74,3 +88,16 @@ status = "enabled" # if disabled will not have .desktop in the desktop_file_dir
 url = "https://github.com"
 status = "enabled"
 ```
+
+### Browser presets
+
+| Browser          | Command Template                                               |
+| ---------------- | -------------------------------------------------------------- |
+| `helium`         | `helium --app={app} --no-first-run --no-default-browser-check` |
+| `chrome`         | `google-chrome --app={app}`                                    |
+| `chromium`       | `chromium --app={app}`                                         |
+| `brave`          | `brave --app={app}`                                            |
+| `microsoft-edge` | `microsoft-edge --app={app}`                                   |
+| `vivaldi`        | `vivaldi --app={app}`                                          |
+| `firefox`        | `firefox --new-window {app}`                                   |
+| `librewolf`      | `librewolf --new-window {app}`                                 |
