@@ -1,0 +1,38 @@
+name: Sync packaging/package.nix
+
+on:
+  push:
+    branches: [master]
+    paths: ["Cargo.toml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-package-nix
+  cancel-in-progress: true
+
+jobs:
+  sync-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update package.nix version from Cargo.toml
+        run: |
+          VER=$(sed -n 's/^version *= *"\(.*\)"/\1/p' Cargo.toml | head -n1)
+          sed -i "s/^  version = \".*\";/  version = \"$VER\";/" packaging/package.nix
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet packaging/package.nix; then
+            echo "No changes needed"
+            exit 0
+          fi
+          VER=$(sed -n 's/^version *= *"\(.*\)"/\1/p' Cargo.toml | head -n1)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packaging/package.nix
+          git commit -m "chore: sync packaging/package.nix to v$VER"
+          git push
