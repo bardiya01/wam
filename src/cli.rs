@@ -18,6 +18,12 @@ pub enum Commands {
     /// Add a new web-app
     Add,
 
+    /// Remove a web-app
+    Remove,
+
     /// List web-apps
     List,
+
+    /// Sync all configured web-apps
+    Sync,
 }

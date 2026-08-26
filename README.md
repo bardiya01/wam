@@ -7,9 +7,9 @@ It automatically fetches icons and created .desktop files
 
 - [ ] Add CLI functionality
   - [x] add command
-  - [ ] remove command
+  - [x] remove command
   - [x] list command
-  - [ ] sync command
+  - [x] sync command
   - [ ] setting command
 - [ ] Add TUI functionality
   - [ ] Main menu

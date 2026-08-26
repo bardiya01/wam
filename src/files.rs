@@ -12,29 +12,48 @@ use std::{
 
 pub fn add_app_entry(
     config: &mut Config,
-    name: String,
+    name: &str,
     url: String,
     status: AppStatus,
     cli: &Cli,
 ) -> Result<(), Box<dyn Error>> {
-    let icon_dir = config
-        .settings
-        .icon_file_dir
-        .as_deref()
-        .ok_or("Icon directory is not configured")?;
-
-    let _ = save_icon(&url, &name, icon_dir)?;
-
     config.apps.insert(
-        name.clone(),
+        name.to_string(),
         AppConfig {
             url: url.clone(),
             status,
         },
     );
 
+    get_metadata(config, name, &url)?;
+
     // 4. Generate the .desktop file
-    create_desktop_file(&name, config)?;
+    save_config(config, cli)?;
+
+    Ok(())
+}
+
+pub fn get_metadata(config: &Config, name: &str, url: &str) -> Result<(), Box<dyn Error>> {
+    let icon_dir = config
+        .settings
+        .icon_file_dir
+        .as_deref()
+        .ok_or("Icon directory is not configured")?;
+
+    let _ = save_icon(url, name, icon_dir)?;
+
+    create_desktop_file(name, config)?;
+    Ok(())
+}
+
+pub fn remove_app_entry(
+    config: &mut Config,
+    name: &String,
+    cli: &Cli,
+) -> Result<(), Box<dyn Error>> {
+    config.apps.remove(name);
+
+    remove_desktop_file(name, config)?;
 
     save_config(config, cli)?;
 
@@ -58,6 +77,20 @@ fn save_icon(target_url: &str, name: &str, icon_dir: &Path) -> Result<PathBuf, B
     fs::write(&output_path, image_bytes)?;
 
     Ok(output_path)
+}
+
+pub fn remove_desktop_file(name: &str, config: &Config) -> Result<(), Box<dyn Error>> {
+    let desktop_dir = config
+        .settings
+        .desktop_file_dir
+        .as_deref()
+        .ok_or("Desktop directory is not configured")?;
+
+    let desktop_file_path = desktop_dir.join(format!("{name}.desktop"));
+
+    fs::remove_file(desktop_file_path)?;
+
+    Ok(())
 }
 
 pub fn create_desktop_file(name: &str, config: &Config) -> Result<(), Box<dyn Error>> {
