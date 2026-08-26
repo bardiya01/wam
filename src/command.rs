@@ -43,7 +43,7 @@ fn handle_add(
         None => &prompt_input("Enter app url: ")?,
     };
     let url = standardize_url(url)?.to_string();
-    if name_list.contains(&url) {
+    if url_list.contains(&url) {
         println!("WARNING: an app with this url already {} exists.", url);
     }
 
@@ -114,10 +114,9 @@ fn handle_list(config: &Config) -> Result<(), Box<dyn Error>> {
 
 fn handle_sync(config: &Config) -> Result<(), Box<dyn Error>> {
     for app in &config.apps {
-        let _ = match app.1.status {
-            AppStatus::Enabled => get_metadata(config, app.0, &app.1.url),
-            _ => Ok(()),
-        };
+        if app.1.status == AppStatus::Enabled {
+            get_metadata(config, app.0, &app.1.url)?
+        }
     }
     Ok(())
 }
@@ -134,21 +133,32 @@ fn handle_toggle(
 
     let name = match name {
         Some(name) => name,
-        None => &prompt_input("Enter app name to delete: ")?,
+        None => &prompt_input("Enter app name to toggle: ")?,
     };
 
-    toggle_desktop_file(name, config, cli)?;
+    if name_list.contains(name) {
+        toggle_desktop_file(name, config, cli)?;
+    } else {
+        eprintln!("App named {} does not exist.", name);
+    }
 
     Ok(())
 }
 
 fn prompt_input(prompt: &str) -> io::Result<String> {
-    print!("{prompt} ");
-    io::stdout().flush()?; // Ensure prompt displays before reading input
+    loop {
+        print!("{prompt} ");
+        io::stdout().flush()?; // Ensure prompt displays before reading input
 
-    let mut input = String::new();
-    io::stdin().read_line(&mut input)?;
-    Ok(input.trim().to_string())
+        let mut input = String::new();
+        io::stdin().read_line(&mut input)?;
+
+        let result = input.trim().to_string();
+        if !result.is_empty() {
+            return Ok(result);
+        }
+        println!("You did not enter anything");
+    }
 }
 
 pub fn standardize_url(input: &str) -> Result<Url, ParseError> {

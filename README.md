@@ -27,6 +27,12 @@ It automatically fetches icons and created .desktop files
 cargo install wam-manager
 ```
 
+### Nix
+
+```bash
+nix run github:bardiya01/wam
+```
+
 ### Build from source
 
 ```bash

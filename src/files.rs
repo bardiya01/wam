@@ -40,7 +40,11 @@ pub fn get_metadata(config: &Config, name: &str, url: &str) -> Result<(), Box<dy
         .as_deref()
         .ok_or("Icon directory is not configured")?;
 
-    let _ = save_icon(url, name, icon_dir)?;
+    if let Err(e) = save_icon(url, name, icon_dir) {
+        eprintln!(
+            "Warning: Could not download icon for {name} ({e}). A default icon will be used. Run 'wam sync' later to try again."
+        );
+    }
 
     create_desktop_file(name, config)?;
     Ok(())
@@ -117,7 +121,9 @@ fn remove_desktop_file(name: &str, config: &Config) -> Result<(), Box<dyn Error>
 
     let desktop_file_path = desktop_dir.join(format!("{name}.desktop"));
 
-    fs::remove_file(desktop_file_path)?;
+    if desktop_file_path.as_path().exists() {
+        fs::remove_file(desktop_file_path)?;
+    }
 
     Ok(())
 }
@@ -151,17 +157,22 @@ fn create_desktop_file(name: &str, config: &Config) -> Result<(), Box<dyn Error>
     let icon_path = icon_dir.join(format!("{name}.png"));
     let desktop_file_path = desktop_dir.join(format!("{name}.desktop"));
 
+    let icon_value = if icon_path.exists() {
+        icon_path.display().to_string()
+    } else {
+        "web-browser".to_string()
+    };
+
     let content = format!(
         "[Desktop Entry]
 Version=1.0
 Name={name}
 Exec={exec}
-Icon={}
+Icon={icon_value}
 Terminal=false
 Type=Application
 Categories=Network;WebBrowser;
-",
-        icon_path.display()
+"
     );
 
     fs::write(&desktop_file_path, content)?;

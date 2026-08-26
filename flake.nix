@@ -34,6 +34,18 @@
             rustfmt
             clippy
           ];
+          shellHook = ''
+            mkdir -p .git/hooks
+            cat > .git/hooks/pre-commit << 'EOF'
+#!/usr/bin/env bash
+set -e
+echo "Running cargo fmt..."
+cargo fmt --check
+echo "Running cargo clippy..."
+cargo clippy --all-targets -- -D warnings
+EOF
+            chmod +x .git/hooks/pre-commit
+          '';
         };
       });
     };

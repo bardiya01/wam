@@ -45,8 +45,15 @@ pub struct AppConfig {
 }
 
 pub fn save_config(config: &Config, cli: &Cli) -> Result<(), Box<dyn Error>> {
+    let config_path = resolve_config_file(cli)?;
     let toml_str = toml::to_string_pretty(config)?;
-    fs::write(resolve_config_file(cli)?, toml_str)?;
+
+    let mut temp_path = config_path.clone();
+    temp_path.set_extension("toml.tmp");
+
+    fs::write(&temp_path, toml_str)?;
+    fs::rename(&temp_path, &config_path)?;
+
     Ok(())
 }
 
