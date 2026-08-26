@@ -17,4 +17,7 @@ pub struct Cli {
 pub enum Commands {
     /// Add a new web-app
     Add,
+
+    /// List web-apps
+    List,
 }

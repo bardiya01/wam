@@ -11,8 +11,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
     let mut config = load_config(&cli)?;
 
-    println!("{:?}", config);
-
     if let Some(command) = &cli.command {
         handle_command(command, &mut config, &cli)?;
     }

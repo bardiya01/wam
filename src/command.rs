@@ -16,6 +16,25 @@ pub fn handle_command(
 ) -> Result<(), Box<dyn Error>> {
     match command {
         Commands::Add => handle_add(config, cli)?,
+        Commands::List => handle_list(config)?,
+    }
+    Ok(())
+}
+
+fn handle_list(config: &Config) -> Result<(), Box<dyn Error>> {
+    let max_name_len = config.apps.keys().map(|k| k.len()).max().unwrap_or(0);
+    for app in &config.apps {
+        let icon = match app.1.status {
+            AppStatus::Enabled => " ",
+            AppStatus::Disabled => " ",
+        };
+        println!(
+            "{} {}{} -> {}",
+            icon,
+            app.0,
+            " ".repeat(max_name_len - app.0.len()),
+            app.1.url
+        );
     }
     Ok(())
 }
