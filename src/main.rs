@@ -5,13 +5,16 @@ use std::error::Error;
 mod cli;
 mod command;
 mod config;
+mod files;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
-    let config = load_config(&cli)?;
+    let mut config = load_config(&cli)?;
+
+    println!("{:?}", config);
 
     if let Some(command) = &cli.command {
-        handle_command(command, &config)?;
+        handle_command(command, &mut config, &cli)?;
     }
 
     Ok(())

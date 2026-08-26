@@ -6,7 +6,7 @@ It automatically fetches icons and created .desktop files
 ## TODO
 
 - [ ] Add CLI functionality
-  - [ ] add command
+  - [x] add command
   - [ ] remove command
   - [ ] list command
   - [ ] sync command

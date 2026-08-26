@@ -1,19 +1,26 @@
-use crate::{cli::Commands, config::Config};
-use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
+use crate::{
+    cli::{Cli, Commands},
+    config::{AppStatus, Config},
+    files::add_app_entry,
+};
 use std::{
     error::Error,
     io::{self, Write},
 };
 use url::{ParseError, Url};
 
-pub fn handle_command(command: &Commands, config: &Config) -> Result<(), Box<dyn Error>> {
+pub fn handle_command(
+    command: &Commands,
+    config: &mut Config,
+    cli: &Cli,
+) -> Result<(), Box<dyn Error>> {
     match command {
-        Commands::Add => handle_add(config)?,
+        Commands::Add => handle_add(config, cli)?,
     }
     Ok(())
 }
 
-fn handle_add(config: &Config) -> Result<(), Box<dyn Error>> {
+fn handle_add(config: &mut Config, cli: &Cli) -> Result<(), Box<dyn Error>> {
     let mut name_list = Vec::new();
     let mut url_list = Vec::new();
 
@@ -26,7 +33,7 @@ fn handle_add(config: &Config) -> Result<(), Box<dyn Error>> {
     let url = standardize_url(&url)?.to_string();
     println!("{url}");
     if name_list.contains(&url) {
-        println!("WARNING: an app with url already {} exists.", url);
+        println!("WARNING: an app with this url already {} exists.", url);
     }
 
     let name = prompt_input("Enter app name: ")?;
@@ -34,40 +41,7 @@ fn handle_add(config: &Config) -> Result<(), Box<dyn Error>> {
         println!("WARNING: an app already named {} exists.", name);
     }
 
-    display_url_icon(&url)?;
-
-    Ok(())
-}
-
-fn display_url_icon(target_url: &str) -> Result<(), Box<dyn Error>> {
-    let parsed = Url::parse(target_url)?;
-    let domain = parsed.host_str().ok_or("Invalid domain in URL")?;
-
-    let icon_url = format!("https://www.google.com/s2/favicons?domain={domain}&sz=128");
-    let image_bytes = reqwest::blocking::get(&icon_url)?.bytes()?;
-
-    let encoded = BASE64.encode(&image_bytes);
-
-    let chunk_size = 4096;
-    let bytes = encoded.as_bytes();
-    let total_chunks = bytes.len().div_ceil(chunk_size);
-
-    for (i, chunk) in bytes.chunks(chunk_size).enumerate() {
-        let is_last = i == total_chunks - 1;
-        let m = if is_last { 0 } else { 1 };
-        let chunk_str = std::str::from_utf8(chunk)?;
-
-        if i == 0 {
-            // First chunk sets control keys: action=Transmit & Display (a=T), format=PNG (f=100)
-            print!("\x1b_Ga=T,f=100,m={m};{chunk_str}\x1b\\");
-        } else {
-            // Subsequent chunks only specify the continuation flag
-            print!("\x1b_Gm={m};{chunk_str}\x1b\\");
-        }
-    }
-
-    io::stdout().flush()?;
-    println!();
+    add_app_entry(config, name, url, AppStatus::Enabled, cli)?;
 
     Ok(())
 }
